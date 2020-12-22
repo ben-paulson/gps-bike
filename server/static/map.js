@@ -1,40 +1,88 @@
-//var cf = JSON.parse(config);
-//console.log(cf);
-
-// Initialize the platform object:
+// Initialization stuff
 var platform = new H.service.Platform({
     'apikey': config.api_key
 });  
 
+// Home variables
 const lat = config.home.lat;
 const long = config.home.lng;
+const updateDelay = 5000;
+var homePt = {"lat": lat, "lng": long};
 
-console.log(lat);
-console.log(long);
-// Obtain the default map types from the platform object
-var maptypes = platform.createDefaultLayers();
-
-// Instantiate (and display) a map object:
-var map = new H.Map(
-    document.getElementById('mapContainer'),
-    maptypes.vector.normal.map,
-    //maptypes.raster.satellite.base,
-    {
-        zoom: 17.5,
-        center: { lat: lat, lng: long }  
+/* Parses a list of point objects and adds them
+ * to the linestring
+ */
+function parsePoints(points) { 
+    points.forEach(function(point) {
+        var coords = Object.values(point)[0];
+        var time = Object.keys(point)[0]; // For later use
+        // Format the coordinates correctly for the linestring
+        var ptData = {"lat": coords[0], "lng": coords[1]};
+        linestring.pushPoint(ptData);
     });
+}
 
-var homeMarker = new H.map.Marker({ lat: lat, lng: long });
+/* Update the map by performing a GET request to
+ * /gpsupdate which will return a list of new points
+ * to be added to the map
+ */
+function updateMap() {
+    $.get("/gpsupdate", function(data) {
+        var points = data.new_points;
+        parsePoints(points, linestring);
+        polyline.setGeometry(linestring);
+    })
+}
 
-// Add the marker to the map:
-map.addObject(homeMarker);
-var mapEvents = new H.mapevents.MapEvents(map);
-// Add event listeners:
-map.addEventListener('tap', function(evt) {
-    // Log 'tap' and 'mouse' events:
-    console.log(evt.type, evt.currentPointer.type);
-});
+/* Populate the map with existing data including
+ * home marker and gps path
+ */
+function populateMap() {
+    // Add home marker to the map
+    homeMarker = new H.map.Marker({ lat: lat, lng: long });
+    map.addObject(homeMarker);
+    // Point data is stored in data.json
+    fetch('static/data.json')
+        .then(response => response.json())
+        .then(function(data) {
+            // Get all the previous points
+            var points = data.points;
+            linestring = new H.geo.LineString();
+            /* Avoid errors if no data has been collected.
+               Polyline requires at least 2 points. */
+            if (points.length < 2) {
+                linestring.pushPoint(homePt);
+                linestring.pushPoint(homePt);
+            }
+            // Add each point to the linestring
+            parsePoints(points);
+            polyline = new H.map.Polyline(linestring, {style: {lineWidth: 10}});
+            map.addObject(polyline);
+        })
+}
 
-// Instantiate the default behavior, providing the mapEvents object:
-var behavior = new H.mapevents.Behavior(mapEvents);   
+/* Create the default map with default map behavior
+ */
+function createMap() {
+    var maptypes = platform.createDefaultLayers();
+    map = new H.Map(
+        document.getElementById('mapContainer'),
+        maptypes.vector.normal.map,
+        //maptypes.raster.satellite.base,
+        {
+            zoom: 17.5,
+            center: homePt  
+        });
+    var mapEvents = new H.mapevents.MapEvents(map);
+    // Default map behavior (zoom, scroll, etc.)
+    var behavior = new H.mapevents.Behavior(mapEvents);       
+}
 
+function start() {
+    createMap();
+    populateMap();
+    // Update the map every 5000ms
+    var intervalID = setInterval(updateMap, updateDelay);
+}
+
+start();
