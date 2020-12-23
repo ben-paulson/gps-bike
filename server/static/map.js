@@ -30,8 +30,20 @@ function updateMap() {
     $.get("/gpsupdate", function(data) {
         var points = data.new_points;
         parsePoints(points, linestring);
+        markLastLocation();
         polyline.setGeometry(linestring);
     })
+}
+
+/* Gets the position of the last recorded location
+ * of the GPS on the map and moves the marker to
+ * that location
+ */
+function markLastLocation() {
+    var points = linestring.getLatLngAltArray();
+    var lastPtLat = points[points.length - 3];
+    var lastPtLng = points[points.length - 2];
+    lastLocationMarker.setGeometry({"lat": lastPtLat, "lng": lastPtLng});
 }
 
 /* Populate the map with existing data including
@@ -41,6 +53,9 @@ function populateMap() {
     // Add home marker to the map
     homeMarker = new H.map.Marker({ lat: lat, lng: long });
     map.addObject(homeMarker);
+    // Add last location marker to the map
+    lastLocationMarker = new H.map.Marker({lat: lat, lng: long});
+    map.addObject(lastLocationMarker);
     // Point data is stored in data.json
     fetch('static/data.json')
         .then(response => response.json())
@@ -56,6 +71,7 @@ function populateMap() {
             }
             // Add each point to the linestring
             parsePoints(points);
+            markLastLocation();
             polyline = new H.map.Polyline(linestring, {style: {lineWidth: 10}});
             map.addObject(polyline);
         })
