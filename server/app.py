@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
 import config
 import json
-import os.path
 
 app = Flask(__name__)
-cfg = config.get_config('static/config.js')
+cfg = config.get_config('data/config.js')
 app.secret_key = cfg['secret_key']
 new_points = []
 
@@ -35,6 +34,15 @@ def map():
         return redirect(url_for('login'))
     return render_template('map.html')
 
+@app.route('/data/<filename>')
+def data(filename):
+    """Do not send config/other data unless
+    user is logged in
+    """
+    if not is_logged_in():
+        return redirect(url_for('login'))
+    return send_from_directory('data', filename)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """Redirects to this page if user is not logged in.
@@ -59,7 +67,7 @@ def update():
         point = request.get_json()
         new_points.append(point)
         # Save new point to JSON file
-        path = 'static/data.json'
+        path = 'data/data.json'
         points = {}
         with open(path) as data_file:
             points = json.load(data_file)

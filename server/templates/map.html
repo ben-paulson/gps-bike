@@ -7,11 +7,14 @@
                 type="text/javascript" charset="utf-8"></script>
         <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"
                 type="text/javascript" charset="utf-8"></script>
+<<<<<<< HEAD
         <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+        <script src="{{url_for('data', filename='config.js')}}"></script>
+=======
         <script src="{{url_for('static', filename='config.js')}}"></script>
+>>>>>>> parent of c7cf4e9... Add info bubbles for markers to display position
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}">
-        <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
     </head> 
     <body style='margin: 0'>
         <div style="width: 100%; height: 100%" id="mapContainer"></div>
